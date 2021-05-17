@@ -13,6 +13,7 @@ contract("Dex:Orderbook", accounts => {
         )
         dex.depositEth({value: 10})
         await TruffleAssert.passes(
+            //WTF?
             //dex.createLimitOrder(Dex.Side.BUY,web3.utils.fromUtf8("LINK"),10,1)
         )
     })
@@ -44,7 +45,7 @@ contract("Dex:Orderbook", accounts => {
         //[300, 200, 100]
 
         let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("LINK"),Dex.Side.BUY)
-        console.log(orderbook)
+        //console.log(orderbook)
         assert(orderbook.length > 0)
         for(let i=0; i < orderbook.length-1; i++) {
             assert(orderbook[i].price >= orderbook[i+1].price, "buy order book is out of order")
@@ -64,7 +65,7 @@ contract("Dex:Orderbook", accounts => {
 
         let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("LINK"),Dex.Side.SELL);
         assert(orderbook.length > 0)
-        console.log(orderbook);
+        //console.log(orderbook);
         for(let i=0; i < orderbook.length-1; i++) {
             assert(orderbook[i].price <= orderbook[i+1].price, "sell order book is out of order");
             //highest price on the end (highest index)
