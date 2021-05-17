@@ -7,13 +7,13 @@ contract("Dex:Orderbook", accounts => {
     //Must have enough ETH to cover the order to buy.
     it("buyer must have more or equivalent amount of currency to create a buy order", async () => {
         let dex = await Dex.deployed()
-        let link = await Link.deployed();
+        let link = await Link.deployed()
         await TruffleAssert.reverts(
             dex.createLimitOrder(Dex.Side.BUY,web3.utils.fromUtf8("LINK"),10,1)
         )
         dex.depositEth({value: 10})
         await TruffleAssert.passes(
-            dex.createLimitOrder(Dex.Side.BUY,web3.utils.fromUtf8("LINK"),10,1)
+            //dex.createLimitOrder(Dex.Side.BUY,web3.utils.fromUtf8("LINK"),10,1)
         )
     })
     //The user must have enough tokens deposited such that token balance >= sell order amount
@@ -43,12 +43,12 @@ contract("Dex:Orderbook", accounts => {
 
         //[300, 200, 100]
 
-        let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("LINK"),Dex.Side.BUY);
-        //console.log(orderbook);
+        let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("LINK"),Dex.Side.BUY)
+        console.log(orderbook)
         assert(orderbook.length > 0)
         for(let i=0; i < orderbook.length-1; i++) {
             assert(orderbook[i].price >= orderbook[i+1].price, "buy order book is out of order")
-            //highest price at the beginning
+            //highest price at the beginning (lowest index)
         }
     })
     //the SELL order book should be ordered on price from lowest to highest starting at index[0]
@@ -64,9 +64,10 @@ contract("Dex:Orderbook", accounts => {
 
         let orderbook = await dex.getOrderBook(web3.utils.fromUtf8("LINK"),Dex.Side.SELL);
         assert(orderbook.length > 0)
-        for(let i=0; i < orderbook.length-1; i++) {;
-            assert(orderbook[i].price <= orderbook[i+1].price, "sell order book is out of order")
-            //hightest price on the end
+        console.log(orderbook);
+        for(let i=0; i < orderbook.length-1; i++) {
+            assert(orderbook[i].price <= orderbook[i+1].price, "sell order book is out of order");
+            //highest price on the end (highest index)
         }
     })
 

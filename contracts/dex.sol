@@ -60,30 +60,32 @@ contract Dex is Wallet {
 
         if(orders.length > 1) {
             //bubble sort - will will traverse from the tail of the array to the 0th index
-            //set the markers for the last index and the penultimate index and the tmp 'buffer' for the swap operation.
+            //set the markers for the last index and the penultimate index and the 'buffer' for the swap operation.
             uint rearIdx = orders.length-1;
             uint frontIdx = rearIdx-1;
-            Order memory tmp;
+            Order memory buffer;
 
             if(side == Side.BUY) { //largest "most interesting" Buy order is closest to 0th position, "the front" (descending order)
-                for(uint i = uint(orders.length); i == 1 ; i--) {
+                while(frontIdx > 0) {
                     //condition for swapping
-                    if(orders[rearIdx].price >orders[frontIdx].price) {
-                        tmp = orders[frontIdx];
-                        orders[frontIdx] = orders[rearIdx];
-                        orders[rearIdx] =  tmp;
-                    }
+                    if(orders[frontIdx].price > orders[rearIdx].price) { break; }
+                    //swap
+                    buffer = orders[frontIdx];
+                    orders[frontIdx] = orders[rearIdx];
+                    orders[rearIdx] =  buffer;
+                    //shift left
                     frontIdx--;
                     rearIdx--;
                 }
             }else if(side == Side.SELL) { //Smallest "most interesting" sell order is at the 0th position, "the front" (ascending order)
-                for(uint i = uint(orders.length); i == 1 ; i--) {
+                while(frontIdx > 0) {
                     //condition for swapping
-                    if(orders[rearIdx].price < orders[frontIdx].price) {
-                        tmp = orders[frontIdx];
-                        orders[frontIdx] = orders[rearIdx];
-                        orders[rearIdx] =  tmp;
-                    }
+                    if(orders[frontIdx].price < orders[rearIdx].price) { break; }
+                    //swap
+                    buffer = orders[frontIdx];
+                    orders[frontIdx] = orders[rearIdx];
+                    orders[rearIdx] =  buffer;
+                    //shift left
                     frontIdx--;
                     rearIdx--;
                 }
