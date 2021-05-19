@@ -94,8 +94,19 @@ contract Dex is Wallet {
 
         nextOrderId++;
     }
-    //
-    //function createMarketOrder() {
-    //
-    //}
+
+    function createMarketOrder(Side side, bytes32 ticker, uint amount) tokenExists(ticker) public returns (uint amountExchanged) {
+        if(Side.BUY == side) {
+            //make sure that that coin is available on the exchange (in exchange wallet)
+            //make sure you have enough money to buy
+            if(balances[msg.sender][bytes32("ETH")] < amount) { return 0; }
+            //find sellers (cheapest seller / smallest price)
+            //give them (transfer) ETH and
+
+
+        }else if(Side.SELL == side) {
+            if (balances[msg.sender][ticker] < amount) { return 0; }
+            //find buyers and push "transfer" to their accounts
+        }
+    }
 }
