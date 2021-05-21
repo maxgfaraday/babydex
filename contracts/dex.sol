@@ -98,14 +98,17 @@ contract Dex is Wallet {
 
     function createMarketOrder(Side side, bytes32 ticker, uint amount) tokenExists(ticker) public returns (uint totalFilled) {
 
+        if(side == Side.SELL) {
+            require(balances[msg.sender][ticker] >= amount, "Insufficient Balance");
+        }
+
         //Selecting the orderbook for the other "side" of this market order.
         //(Ex: If it is a buy order you want to work against the sell orderbook, and vise versa)
         uint orderBookSide;
         if(side == Side.BUY) {
-            orderBookSide = orderBook[ticker][1 /*uint(Side.SELL)*/];
+            orderBookSide = uint(Side.SELL);
         } else if (side == Side.SELL) {
-            require(balances[msg.sender][ticker] >= amount, "Insufficient Balance");
-            orderBookSide = orderBook[ticker][0 /*uint(Side.BUY)*/];
+            orderBookSide = uint(Side.BUY);
         }
         Order[] storage orders = orderBook[ticker][orderBookSide];
 
@@ -113,7 +116,7 @@ contract Dex is Wallet {
 
         totalFilled = 0;
 
-        for(uint i=0; i<orders.length && totalFilled < amount; i++) {
+        for(uint i=0; i < orders.length && totalFilled < amount; i++) {
             if (amount > orders[i].amount) { //complete order filling
                 orders[i].filled = orders[i].amount;
                 orders[i].amount = 0;
@@ -159,7 +162,6 @@ contract Dex is Wallet {
             }
             orders.pop;
         }
-
 
         return totalFilled;
     }
