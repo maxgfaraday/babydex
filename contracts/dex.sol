@@ -96,71 +96,63 @@ contract Dex is Wallet {
         nextOrderId++;
     }
 
-    function createMarketOrder(Side side, bytes32 ticker, uint amount) tokenExists(ticker) public returns (uint totalFilled) {
+    function createMarketOrder(Side side, bytes32 ticker, uint amount) public returns(uint totalFilled){
 
-        if(side == Side.SELL) {
-            require(balances[msg.sender][ticker] >= amount, "Insufficient Balance");
-        }
-
-        //Selecting the orderbook for the other "side" of this market order.
-        //(Ex: If it is a buy order you want to work against the sell orderbook, and vise versa)
         uint orderBookSide;
-        if(side == Side.BUY) {
+        if(side == Side.BUY){
             orderBookSide = uint(Side.SELL);
-        } else if (side == Side.SELL) {
+        }
+        else{
+            require(balances[msg.sender][ticker] >= amount, "Insuffient balance");
             orderBookSide = uint(Side.BUY);
         }
         Order[] storage orders = orderBook[ticker][orderBookSide];
 
-        //Let's fill the order the best that we can.  We will allow partial filling of the order
-
         totalFilled = 0;
 
-        for(uint i=0; i < orders.length && totalFilled < amount; i++) {
-            if (amount > orders[i].amount) { //complete order filling
-                orders[i].filled = orders[i].amount;
-                orders[i].amount = 0;
-                totalFilled = totalFilled.add(orders[i].filled);
-            } else if(amount < orders[i].amount) { //partial order filling
-                orders[i].amount = orders[i].amount.sub(amount);
-                orders[i].filled = amount;
-                totalFilled = totalFilled.add(amount);
+        //Let's fill the order the best that we can.  We will allow partial filling of the order
+
+        for (uint256 i = 0; i < orders.length && totalFilled < amount; i++) {
+            uint leftToFill = amount.sub(totalFilled);
+            uint availableToFill = orders[i].amount.sub(orders[i].filled);
+            uint filled = 0;
+            if(availableToFill > leftToFill){
+                filled = leftToFill; //Fill the entire market order
+            }
+            else{
+                filled = availableToFill; //Fill as much as is available in order[i]
             }
 
-            //Dispatch the money transfers according to the type of order "side" we are executing.
+            totalFilled = totalFilled.add(filled);
+            orders[i].filled = orders[i].filled.add(filled);
+            uint cost = filled.mul(orders[i].price);
 
-            if(Side.BUY == side) {
-                //make sure that that coin is available on the exchange (in exchange wallet): addressed with function modifier
-                //make sure you have enough money to buy the "filled" amount.
-                require(balances[msg.sender][bytes32("ETH")] >= orders[i].filled.mul(orders[i].price));
-                //as the buyer (buys something, spends money)
-                balances[msg.sender][ticker] = balances[msg.sender][ticker].add(orders[i].filled);
-                balances[msg.sender][bytes32("ETH")] = balances[msg.sender][bytes32("ETH")].sub(orders[i].filled.mul(orders[i].price));
+            if(side == Side.BUY){
+                //Verify that the buyer has enough ETH to cover the purchase (require)
+                require(balances[msg.sender]["ETH"] >= cost);
+                //msg.sender is the buyer
+                balances[msg.sender][ticker] = balances[msg.sender][ticker].add(filled);
+                balances[msg.sender]["ETH"] = balances[msg.sender]["ETH"].sub(cost);
 
-                //as the seller (trader)
-                balances[orders[i].trader][ticker] = balances[orders[i].trader][ticker].sub(orders[i].filled);
-                balances[orders[i].trader][bytes32("ETH")] = balances[orders[i].trader][bytes32("ETH")].sub(orders[i].filled.mul(orders[i].price));
-
-                //IERC20(transferFrom)(address(this), orders[i].trader, orders[i].filled.mul(orders[i].price));
-
-            }else if(Side.SELL == side) {
-                //as the seller (sells something, gets money)
-                balances[msg.sender][ticker] = balances[msg.sender][ticker].sub(orders[i].filled);
-                balances[msg.sender][bytes32("ETH")] = balances[msg.sender][ticker].add(orders[i].filled.mul(orders[i].price));
-                //as the buyer (buys something, spends money)
-                balances[orders[i].trader][ticker] = balances[orders[i].trader][ticker].add(orders[i].filled);
-                balances[orders[i].trader][bytes32("ETH")] = balances[orders[i].trader][bytes32("ETH")].sub(orders[i].filled.mul(orders[i].price));
-
-                //IERC20(tokenMapping[ticker].tokenAddress).transfer(orders[i].trader, orders[i].filled);
+                balances[orders[i].trader][ticker] = balances[orders[i].trader][ticker].sub(filled);
+                balances[orders[i].trader]["ETH"] = balances[orders[i].trader]["ETH"].add(cost);
             }
+            else if(side == Side.SELL){
+                //Msg.sender is the seller
+                balances[msg.sender][ticker] = balances[msg.sender][ticker].sub(filled);
+                balances[msg.sender]["ETH"] = balances[msg.sender]["ETH"].add(cost);
+
+                balances[orders[i].trader][ticker] = balances[orders[i].trader][ticker].add(filled);
+                balances[orders[i].trader]["ETH"] = balances[orders[i].trader]["ETH"].sub(cost);
+            }
+
         }
-
-        //loop through and clean up what has been filled.
-        while(orders.length > 0 && orders[0].amount == 0) {
-            for(uint i = 0; i < orders.length - 1; i++) {
-                orders[i] = orders[i+1];
+        //Remove 100% filled orders from the orderbook
+        while(orders.length > 0 && orders[0].filled == orders[0].amount){
+            for (uint256 i = 0; i < orders.length - 1; i++) {
+                orders[i] = orders[i + 1];
             }
-            orders.pop;
+            orders.pop();
         }
 
         return totalFilled;

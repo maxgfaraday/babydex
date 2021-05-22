@@ -138,7 +138,7 @@ contract("Dex:MarketOrders", accounts => {
     })
 
     //Filled limit orders should be removed from the orderbook
-    xit("Filled limit orders should be removed from the orderbook", async () => {
+    it("Filled limit orders should be removed from the orderbook", async () => {
         let dex = await Dex.deployed()
         let link = await Link.deployed()
         await dex.addToken(web3.utils.fromUtf8("LINK"), link.address)
